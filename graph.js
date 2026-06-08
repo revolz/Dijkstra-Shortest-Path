@@ -46,26 +46,28 @@ export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceCo
   const maxPossible = directed ? n * (n - 1) : Math.floor(n * (n - 1) / 2);
   const budget = Math.min(targetEdges, maxPossible);
 
-  // Spanning tree to guarantee connectivity, respecting maxDegree where possible
+  // Nearest-neighbour spanning tree (Prim's) — always attach the closest unconnected node
   if (forceConnected) {
-    const order = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
-    const connected = [order[0]];
+    const inTree = new Set([Math.floor(Math.random() * n)]);
 
-    for (let i = 1; i < n; i++) {
-      if (directed) {
-        const tgt = order[i];
-        const preferred = connected.filter(s => graph.degree(s) < maxDegree);
-        const pool = preferred.length > 0 ? preferred : connected;
-        const src = pool[Math.floor(Math.random() * pool.length)];
-        if (!graph.hasEdge(src, tgt)) graph.addEdge(src, tgt, edgeCost(graph, src, tgt));
-      } else {
-        const a = order[i];
-        const preferred = connected.filter(b => graph.degree(b) < maxDegree);
-        const pool = preferred.length > 0 ? preferred : connected;
-        const b = pool[Math.floor(Math.random() * pool.length)];
-        if (!graph.hasEdge(a, b)) graph.addEdge(a, b, edgeCost(graph, a, b));
+    while (inTree.size < n) {
+      let bestCost = Infinity, bestSrc = -1, bestTgt = -1;
+
+      // Find the shortest edge from any inTree node to any outside node
+      // Prefer sources that haven't hit maxDegree; fall back to any if needed
+      for (let pass = 0; pass < 2 && bestSrc === -1; pass++) {
+        for (const u of inTree) {
+          if (pass === 0 && graph.degree(u) >= maxDegree) continue;
+          for (let v = 0; v < n; v++) {
+            if (inTree.has(v)) continue;
+            const w = edgeCost(graph, u, v);
+            if (w < bestCost) { bestCost = w; bestSrc = u; bestTgt = v; }
+          }
+        }
       }
-      connected.push(order[i]);
+
+      graph.addEdge(bestSrc, bestTgt, bestCost);
+      inTree.add(bestTgt);
     }
 
     if (budget < n - 1) {
@@ -74,18 +76,22 @@ export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceCo
     }
   }
 
-  // Fill remaining edges up to budget
-  const MAX_ATTEMPTS = budget * 20;
-  let attempts = 0;
-  while (graph.edgeList.length < budget && attempts < MAX_ATTEMPTS) {
-    attempts++;
-    const u = Math.floor(Math.random() * n);
-    let v = Math.floor(Math.random() * (n - 1));
-    if (v >= u) v++;
+  // Extra edges: sort all remaining candidate pairs by distance, add shortest first
+  const candidates = [];
+  for (let u = 0; u < n; u++) {
+    for (let v = directed ? 0 : u + 1; v < n; v++) {
+      if (u === v || graph.hasEdge(u, v)) continue;
+      candidates.push({ u, v, w: edgeCost(graph, u, v) });
+    }
+  }
+  candidates.sort((a, b) => a.w - b.w);
+
+  for (const { u, v, w } of candidates) {
+    if (graph.edgeList.length >= budget) break;
     if (graph.hasEdge(u, v)) continue;
     if (graph.degree(u) >= maxDegree) continue;
     if (!directed && graph.degree(v) >= maxDegree) continue;
-    graph.addEdge(u, v, edgeCost(graph, u, v));
+    graph.addEdge(u, v, w);
   }
 
   if (graph.edgeList.length < budget) {

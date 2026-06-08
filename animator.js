@@ -93,12 +93,12 @@ export class Animator {
         if (pass === 0) {
           // Glow pass — only path edges get a glow
           if (!isPath) continue;
-          ctx.strokeStyle = 'rgba(0,229,255,0.22)';
+          ctx.strokeStyle = 'rgba(241,196,15,0.22)';
           ctx.lineWidth = 14;
         } else {
           // Solid pass
           if (isPath) {
-            ctx.strokeStyle = '#00e5ff';
+            ctx.strokeStyle = '#f1c40f';
             ctx.lineWidth = 4;
           } else if (isRelaxed) {
             ctx.strokeStyle = '#ffe066';

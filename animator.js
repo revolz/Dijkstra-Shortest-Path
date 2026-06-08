@@ -46,15 +46,22 @@ export class Animator {
   // Maps fractional position to canvas pixel
   _px(i) {
     const p = this.graph.positions[i];
-    const pad = Math.max(32, this._nodeRadius() + 18);
+    const maxR = this._nodeRadius(this.source ?? 0);
+    const pad = Math.max(36, maxR + 20);
     return {
       x: pad + p.x * (this._w - 2 * pad),
       y: pad + p.y * (this._h - 2 * pad),
     };
   }
 
-  _nodeRadius() {
+  _baseRadius() {
     return Math.max(13, Math.min(22, 180 / this.graph.n));
+  }
+
+  _nodeRadius(i = -1) {
+    const base = this._baseRadius();
+    if (i === this.source || i === this.dest) return Math.round(base * 1.65);
+    return base;
   }
 
   _pathEdgeSet(step) {
@@ -71,38 +78,48 @@ export class Animator {
     const ctx = this.ctx;
     const pathSet = this._pathEdgeSet(step);
 
-    for (const { u, v } of this.graph.edgeList) {
-      const pu = this._px(u);
-      const pv = this._px(v);
+    // Two-pass rendering: glow layer first, then solid strokes
+    for (let pass = 0; pass < 2; pass++) {
+      for (const { u, v } of this.graph.edgeList) {
+        const pu = this._px(u);
+        const pv = this._px(v);
 
-      // pathSet already includes both directions for undirected (see _pathEdgeSet)
-      const isPath = pathSet.has(`${u},${v}`);
-      const isRelaxed = step?.relaxed &&
-        ((step.relaxed.u === u && step.relaxed.v === v) ||
-          (!this.graph.directed && step.relaxed.u === v && step.relaxed.v === u));
-      const bothVisited = step && step.visited.has(u) && step.visited.has(v);
+        const isPath = pathSet.has(`${u},${v}`);
+        const isRelaxed = step?.relaxed &&
+          ((step.relaxed.u === u && step.relaxed.v === v) ||
+            (!this.graph.directed && step.relaxed.u === v && step.relaxed.v === u));
+        const bothVisited = step && step.visited.has(u) && step.visited.has(v);
 
-      if (isPath) {
-        ctx.strokeStyle = '#f1c40f';
-        ctx.lineWidth = 3;
-      } else if (isRelaxed) {
-        ctx.strokeStyle = '#ffe066';
-        ctx.lineWidth = 2.5;
-      } else if (bothVisited) {
-        ctx.strokeStyle = '#5a3070';
-        ctx.lineWidth = 1;
-      } else {
-        ctx.strokeStyle = '#3a3a5c';
-        ctx.lineWidth = 1;
-      }
+        if (pass === 0) {
+          // Glow pass — only path edges get a glow
+          if (!isPath) continue;
+          ctx.strokeStyle = 'rgba(0,229,255,0.22)';
+          ctx.lineWidth = 14;
+        } else {
+          // Solid pass
+          if (isPath) {
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineWidth = 4;
+          } else if (isRelaxed) {
+            ctx.strokeStyle = '#ffe066';
+            ctx.lineWidth = 2.5;
+          } else if (bothVisited) {
+            ctx.strokeStyle = '#5a3070';
+            ctx.lineWidth = 1;
+          } else {
+            ctx.strokeStyle = '#3a3a5c';
+            ctx.lineWidth = 1;
+          }
+        }
 
-      if (this.graph.directed) {
-        this._arrowEdge(ctx, pu, pv, isPath ? '#f1c40f' : ctx.strokeStyle, ctx.lineWidth);
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(pu.x, pu.y);
-        ctx.lineTo(pv.x, pv.y);
-        ctx.stroke();
+        if (this.graph.directed) {
+          this._arrowEdge(ctx, pu, pv, ctx.strokeStyle, ctx.lineWidth);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(pu.x, pu.y);
+          ctx.lineTo(pv.x, pv.y);
+          ctx.stroke();
+        }
       }
     }
   }
@@ -142,10 +159,10 @@ export class Animator {
 
   _drawNodes(step) {
     const ctx = this.ctx;
-    const r = this._nodeRadius();
 
     for (let i = 0; i < this.graph.n; i++) {
       const p = this._px(i);
+      const r = this._nodeRadius(i);
       let color = '#4a90d9';
 
       if (step) {
@@ -157,7 +174,16 @@ export class Animator {
         else if (step.frontier.has(i)) color = '#f39c12';
       }
 
-      // Ring for current node
+      // Outer colored ring for source / dest
+      if (i === this.source || i === this.dest) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r + 7, 0, Math.PI * 2);
+        ctx.strokeStyle = i === this.source ? '#27ae60' : '#e74c3c';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+
+      // Ring for current node being processed
       if (step && i === step.current) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, r + 5, 0, Math.PI * 2);
@@ -197,23 +223,27 @@ export class Animator {
 
   _drawNodeLabels(step) {
     const ctx = this.ctx;
-    const r = this._nodeRadius();
-    const fontSize = Math.max(9, Math.min(13, r * 0.72));
+    const baseR = this._baseRadius();
+    const fontSize = Math.max(9, Math.min(13, baseR * 0.72));
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     for (let i = 0; i < this.graph.n; i++) {
       const p = this._px(i);
+      const r = this._nodeRadius(i);
+      const fsz = (i === this.source || i === this.dest)
+        ? Math.max(10, Math.min(16, r * 0.62))
+        : fontSize;
 
       // Node index
-      ctx.font = `bold ${fontSize}px monospace`;
+      ctx.font = `bold ${fsz}px monospace`;
       ctx.fillStyle = '#ffffff';
       ctx.fillText(i, p.x, p.y);
 
       // Dist label beneath node
       if (step) {
         const d = step.dist[i];
-        ctx.font = `${Math.max(8, fontSize - 2)}px monospace`;
+        ctx.font = `${Math.max(8, fsz - 2)}px monospace`;
         ctx.fillStyle = 'rgba(180,180,230,0.85)';
         ctx.fillText(d === Infinity ? '∞' : d, p.x, p.y + r + 11);
       }

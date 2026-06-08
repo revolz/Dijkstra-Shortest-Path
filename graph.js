@@ -53,16 +53,13 @@ export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceCo
     while (inTree.size < n) {
       let bestCost = Infinity, bestSrc = -1, bestTgt = -1;
 
-      // Find the shortest edge from any inTree node to any outside node
-      // Prefer sources that haven't hit maxDegree; fall back to any if needed
-      for (let pass = 0; pass < 2 && bestSrc === -1; pass++) {
-        for (const u of inTree) {
-          if (pass === 0 && graph.degree(u) >= maxDegree) continue;
-          for (let v = 0; v < n; v++) {
-            if (inTree.has(v)) continue;
-            const w = edgeCost(graph, u, v);
-            if (w < bestCost) { bestCost = w; bestSrc = u; bestTgt = v; }
-          }
+      // Pure Prim's: always pick the shortest edge regardless of degree
+      // (maxDegree is enforced only in the extra-edges phase below)
+      for (const u of inTree) {
+        for (let v = 0; v < n; v++) {
+          if (inTree.has(v)) continue;
+          const w = edgeCost(graph, u, v);
+          if (w < bestCost) { bestCost = w; bestSrc = u; bestTgt = v; }
         }
       }
 

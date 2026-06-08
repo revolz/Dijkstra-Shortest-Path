@@ -94,10 +94,11 @@ function onFindPath() {
   state.animator.onComplete = () => { state.playing = false; btnPlay.textContent = '▶'; };
   state.animator.setSpeed(SPEED_MAP[parseInt(sldSpeed.value)]);
 
+  const lastStep = state.result.steps.length - 1;
   setPlayerEnabled(true);
-  state.animator.render(0);
-  updatePlayerUI(0, state.result.steps.length);
-  updateStepDesc(0);
+  state.animator.render(lastStep);
+  updatePlayerUI(lastStep, state.result.steps.length);
+  updateStepDesc(lastStep);
 
   if (state.result.reachable) {
     resultSummary.textContent = `Cost: ${state.result.cost}  ·  Path: ${state.result.path.join(' → ')}`;

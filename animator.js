@@ -216,7 +216,7 @@ export class Animator {
       const ox = len > 0 ? (-dy / len) * 11 : 0;
       const oy = len > 0 ? (dx / len) * 11 : 0;
 
-      ctx.fillStyle = 'rgba(200,200,220,0.75)';
+      ctx.fillStyle = 'rgba(140,200,245,0.82)';
       ctx.fillText(w, mx + ox, my + oy);
     }
   }
@@ -244,7 +244,7 @@ export class Animator {
       if (step) {
         const d = step.dist[i];
         ctx.font = `${Math.max(8, fsz - 2)}px monospace`;
-        ctx.fillStyle = 'rgba(180,180,230,0.85)';
+        ctx.fillStyle = 'rgba(248,196,56,0.92)';
         ctx.fillText(d === Infinity ? '∞' : d, p.x, p.y + r + 11);
       }
     }

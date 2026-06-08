@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dijkstra Shortest Path Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="app">
+
+    <aside id="config-panel">
+
+      <h2 class="section-label">Graph Config</h2>
+      <section id="graph-config">
+        <label>
+          <span>Nodes <em>(2 – 50)</em></span>
+          <input id="inp-nodes" type="number" min="2" max="50" value="12">
+        </label>
+        <label>
+          <span>Edges</span>
+          <input id="inp-edges" type="number" min="1" max="300" value="18">
+        </label>
+        <label>
+          <span>Max degree per node</span>
+          <input id="inp-degree" type="number" min="1" max="20" value="5">
+        </label>
+        <label class="check-row">
+          <input id="inp-connected" type="checkbox" checked>
+          <span>Force connected graph</span>
+        </label>
+        <label class="check-row">
+          <input id="inp-directed" type="checkbox">
+          <span>Directed graph</span>
+        </label>
+        <button id="btn-generate" class="btn-primary">Generate Graph</button>
+      </section>
+
+      <h2 class="section-label">Find Path</h2>
+      <section id="path-config">
+        <label>
+          <span>Source node</span>
+          <select id="sel-source"></select>
+        </label>
+        <label>
+          <span>Destination node</span>
+          <select id="sel-dest"></select>
+        </label>
+        <button id="btn-find" class="btn-primary" disabled>Find Shortest Path</button>
+        <div id="result-summary"></div>
+      </section>
+
+      <h2 class="section-label">Legend</h2>
+      <div id="legend">
+        <div class="legend-row"><span class="dot source"></span>Source</div>
+        <div class="legend-row"><span class="dot dest"></span>Destination</div>
+        <div class="legend-row"><span class="dot path"></span>Shortest path</div>
+        <div class="legend-row"><span class="dot visited"></span>Settled (visited)</div>
+        <div class="legend-row"><span class="dot frontier"></span>In queue (frontier)</div>
+        <div class="legend-row"><span class="dot dflt"></span>Unvisited</div>
+      </div>
+
+    </aside>
+
+    <main id="canvas-panel">
+      <canvas id="graph-canvas"></canvas>
+    </main>
+
+  </div>
+
+  <footer id="player-bar">
+    <button id="btn-prev" title="Step back" disabled>&#9664;&#9664;</button>
+    <button id="btn-play" title="Play / Pause" disabled>&#9654;</button>
+    <button id="btn-next" title="Step forward" disabled>&#9654;&#9654;</button>
+
+    <div id="speed-wrap">
+      <input id="sld-speed" type="range" min="1" max="4" step="1" value="2" disabled>
+      <span id="lbl-speed">1×</span>
+    </div>
+
+    <div id="progress-wrap">
+      <div id="progress-bar-wrap">
+        <div id="progress-bar-fill"></div>
+      </div>
+      <span id="lbl-step">— / —</span>
+    </div>
+
+    <div id="step-desc"></div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

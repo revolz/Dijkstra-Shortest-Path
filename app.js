@@ -17,6 +17,7 @@ const selSource    = document.getElementById('sel-source');
 const selDest      = document.getElementById('sel-dest');
 const btnFind      = document.getElementById('btn-find');
 const resultSummary = document.getElementById('result-summary');
+const graphNote    = document.getElementById('graph-note');
 const pathSection  = document.getElementById('path-config');
 
 // Canvas
@@ -65,6 +66,8 @@ function onGenerateGraph() {
   setPlayerEnabled(false);
   resultSummary.textContent = '';
   resultSummary.className = '';
+  graphNote.textContent = state.graph._edgeNote ?? '';
+  graphNote.className = state.graph._edgeNote ? 'warn' : '';
   stepDesc.textContent = '';
   updatePlayerUI(0, 1);
 

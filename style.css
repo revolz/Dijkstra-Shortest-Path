@@ -127,13 +127,19 @@ select option { background: var(--panel); }
 
 .btn-primary:disabled { opacity: .35; cursor: not-allowed; }
 
-#result-summary {
+#result-summary, #graph-note {
   font-size: 11px;
   min-height: 18px;
   border-radius: 4px;
   padding: 5px 7px;
   line-height: 1.4;
   word-break: break-word;
+}
+
+#graph-note.warn {
+  background: rgba(243,156,18,.12);
+  color: #f5c842;
+  border: 1px solid rgba(243,156,18,.3);
 }
 
 #result-summary.success {

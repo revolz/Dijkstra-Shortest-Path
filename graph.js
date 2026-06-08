@@ -42,24 +42,34 @@ export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceCo
   const maxPossible = directed ? n * (n - 1) : Math.floor(n * (n - 1) / 2);
   const budget = Math.min(targetEdges, maxPossible);
 
-  // Spanning tree to guarantee connectivity
+  // Spanning tree to guarantee connectivity, respecting maxDegree where possible
   if (forceConnected) {
     const order = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
+    const connected = [order[0]];
+
     for (let i = 1; i < n; i++) {
       const w = Math.floor(Math.random() * 20) + 1;
       if (directed) {
-        // root → new node so Dijkstra from root reaches everything
-        const src = order[Math.floor(Math.random() * i)];
         const tgt = order[i];
+        // Prefer a source that hasn't hit maxDegree; fall back to any connected node
+        const preferred = connected.filter(s => graph.degree(s) < maxDegree);
+        const pool = preferred.length > 0 ? preferred : connected;
+        const src = pool[Math.floor(Math.random() * pool.length)];
         if (!graph.hasEdge(src, tgt)) graph.addEdge(src, tgt, w);
       } else {
         const a = order[i];
-        const b = order[Math.floor(Math.random() * i)];
+        // Prefer neighbors that haven't hit maxDegree; fall back to any connected node
+        const preferred = connected.filter(b => graph.degree(b) < maxDegree);
+        const pool = preferred.length > 0 ? preferred : connected;
+        const b = pool[Math.floor(Math.random() * pool.length)];
         if (!graph.hasEdge(a, b)) graph.addEdge(a, b, w);
       }
+      connected.push(order[i]);
     }
+
     if (budget < n - 1) {
-      console.warn('Edge budget too low for connected graph; using spanning tree only.');
+      // Edge budget is below the minimum for a connected graph — clamp and note it
+      graph._edgeNote = `Connected graph needs ≥ ${n - 1} edges; showing ${n - 1}.`;
       return graph;
     }
   }

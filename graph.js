@@ -22,18 +22,22 @@ export class Graph {
   }
 }
 
+// Edge cost = Euclidean distance between node positions, scaled to integer units
+function edgeCost(graph, u, v) {
+  const pu = graph.positions[u], pv = graph.positions[v];
+  return Math.max(1, Math.round(Math.hypot(pu.x - pv.x, pu.y - pv.y) * 100));
+}
+
 export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceConnected, directed }) {
   if (n < 1) return new Graph(1, directed);
 
   const graph = new Graph(n, directed);
 
-  // Positions: circular layout with jitter, clamped to [0.05, 0.95]
+  // Random positions across the canvas area [0.05, 0.95]
   for (let i = 0; i < n; i++) {
-    const angle = (2 * Math.PI * i / n) + (Math.random() - 0.5) * 0.3;
-    const radius = 0.36 + (Math.random() - 0.5) * 0.04;
     graph.positions.push({
-      x: Math.max(0.05, Math.min(0.95, 0.5 + radius * Math.cos(angle))),
-      y: Math.max(0.05, Math.min(0.95, 0.5 + radius * Math.sin(angle))),
+      x: 0.05 + Math.random() * 0.90,
+      y: 0.05 + Math.random() * 0.90,
     });
   }
 
@@ -48,27 +52,23 @@ export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceCo
     const connected = [order[0]];
 
     for (let i = 1; i < n; i++) {
-      const w = Math.floor(Math.random() * 20) + 1;
       if (directed) {
         const tgt = order[i];
-        // Prefer a source that hasn't hit maxDegree; fall back to any connected node
         const preferred = connected.filter(s => graph.degree(s) < maxDegree);
         const pool = preferred.length > 0 ? preferred : connected;
         const src = pool[Math.floor(Math.random() * pool.length)];
-        if (!graph.hasEdge(src, tgt)) graph.addEdge(src, tgt, w);
+        if (!graph.hasEdge(src, tgt)) graph.addEdge(src, tgt, edgeCost(graph, src, tgt));
       } else {
         const a = order[i];
-        // Prefer neighbors that haven't hit maxDegree; fall back to any connected node
         const preferred = connected.filter(b => graph.degree(b) < maxDegree);
         const pool = preferred.length > 0 ? preferred : connected;
         const b = pool[Math.floor(Math.random() * pool.length)];
-        if (!graph.hasEdge(a, b)) graph.addEdge(a, b, w);
+        if (!graph.hasEdge(a, b)) graph.addEdge(a, b, edgeCost(graph, a, b));
       }
       connected.push(order[i]);
     }
 
     if (budget < n - 1) {
-      // Edge budget is below the minimum for a connected graph — clamp and note it
       graph._edgeNote = `Connected graph needs ≥ ${n - 1} edges; showing ${n - 1}.`;
       return graph;
     }
@@ -85,7 +85,7 @@ export function generateGraph({ nodes: n, edges: targetEdges, maxDegree, forceCo
     if (graph.hasEdge(u, v)) continue;
     if (graph.degree(u) >= maxDegree) continue;
     if (!directed && graph.degree(v) >= maxDegree) continue;
-    graph.addEdge(u, v, Math.floor(Math.random() * 20) + 1);
+    graph.addEdge(u, v, edgeCost(graph, u, v));
   }
 
   if (graph.edgeList.length < budget) {
